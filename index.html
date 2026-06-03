@@ -1,0 +1,390 @@
+png<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="イープラス">
+  
+  <meta id="theme-color-meta" name="theme-color" content="#ffffff">
+  
+  <title>e+</title>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+  <link rel="icon" type="image/png" href="icon.png">
+
+  <style>
+    /* ＝＝＝ 共通設定 ＝＝＝ */
+    body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
+      overscroll-behavior-y: none; user-select: none;
+      -webkit-user-select: none; -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #ffffff;
+    }
+
+    .page {
+      display: none; position: relative;
+      width: 100vw; height: 100vh; overflow: hidden;
+    }
+    .page.active { display: block; }
+    
+    /* ＝＝＝ 各画面の背景色設定 ＝＝＝ */
+    #page-top, #page-member, #page-search { background-color: #ffffff; }
+    #page-news { background-color: #000000; }
+    #page-favorite, #page-notification, #page-ticket { background-color: rgb(241,107,170); }
+    #page-member-list { background-color: #f5f5f5; }
+
+    /* ＝＝＝ スクロール設定 ＝＝＝ */
+    /* ★修正：トップページは全体のスクロールを止め、中の .scroll-area だけをスクロールさせるため #page-top を削除 */
+    #page-news, #page-favorite, #page-notification, #page-member, #page-member-list {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 120px; /* 余白を少し多めに確保 */
+    }
+
+    /* 検索画面はメニューバーが無いので下の余白を無くす */
+    #page-search {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .screenshot { width: 100%; height: auto; display: block; }
+
+    /* ★ 当たり判定（本番時は background-color の行を消してください） */
+    .hitbox {
+      position: absolute; z-index: 2000; cursor: pointer;
+      /* background-color: rgba(255, 0, 0, 0.4) !important; */
+    }
+
+    /* ＝＝＝ トップ固定ヘッダー ＝＝＝ */
+    .top-header {
+      position: fixed; /* ★修正：絶対配置ではなく画面に完全固定 */
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100px; /* ★修正：少し高めに設定 */
+      overflow: hidden; 
+      z-index: 5000; /* ★修正：他の要素（メニュー等）よりも確実に手前に表示する */
+      background-color: #fff;
+    }
+    
+    .top-header img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ＝＝＝ メニューバー ＝＝＝ */
+    .fixed-bottom-bar, .absolute-bottom-bar {
+      background-color: rgba(255, 255, 255, 0.85); 
+      -webkit-backdrop-filter: blur(10px);         
+      backdrop-filter: blur(10px);                 
+      border-radius: 40px;                         
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);      
+      border: none;
+      width: 90vw;                                 
+      padding-top: 15px; 
+      padding-bottom: calc(15px + env(safe-area-inset-bottom));
+      z-index: 1000;
+      display: flex;                               
+      justify-content: space-around; 
+      align-items: center;
+    }
+
+    .fixed-bottom-bar { position: fixed; bottom: 20px; left: 5vw; }
+    .absolute-bottom-bar { position: absolute; bottom: 20px; left: 5vw; }
+
+    .nav-item { display: flex; flex-direction: column; align-items: center; width: 20%; color: #999; cursor: pointer; }
+    .nav-item.active { color: #000000; } 
+    
+    .nav-icon { width: 24px; height: 24px; margin-bottom: 4px; display: flex; justify-content: center; align-items: center; }
+    .nav-text { font-size: 10px; font-weight: bold; }
+
+    .nav-icon-img { width: 100%; height: 100%; object-fit: contain; }
+    .nav-item.active .nav-icon-img { filter: brightness(0); }
+
+    /* ＝＝＝ スライド＆アコーディオン ＝＝＝ */
+    .slider-container { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+    .slider-wrapper { display: flex; width: 300vw; height: 100%; transition: transform 0.3s ease-out; }
+    .slider-screen { width: 100vw; height: 100vh; position: relative; flex-shrink: 0; overflow: hidden; }
+
+    .scroll-area { 
+      position: relative; 
+      width: 100%; height: 100%; 
+      overflow-y: auto; 
+      -webkit-overflow-scrolling: touch; 
+      padding-bottom: 120px; 
+    }
+
+    .accordion-item { overflow: hidden; background: #fff; }
+    .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .accordion-item.open .accordion-content { max-height: 1200px; }
+    .detail-img { width: 100%; height: auto; display: block; }
+
+    /* ＝＝＝ 会員リスト＆ローディング ＝＝＝ */
+    .list-header { padding: 15px; padding-top: calc(15px + env(safe-area-inset-top)); background: #fff; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 200; display: flex; align-items: center; justify-content: center; }
+    .back-arrow { color: #319fa5; font-size: 20px; font-weight: normal; cursor: pointer; position: absolute; left: 15px; }
+    .list-title { font-weight: bold; font-size: 16px; }
+    .settings-list { list-style: none; padding: 0; margin: 0; background: #fff; padding-bottom: 30vh; }
+    .settings-list li { display: flex; justify-content: space-between; align-items: center; padding: 16px 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333; cursor: pointer; }
+    .settings-list li:active { background-color: #f9f9f9; }
+    .right-arrow { color: #319fa5; font-size: 18px; font-weight: bold; }
+
+    .loading-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: none; align-items: center; justify-content: center; z-index: 3000; }
+    .loader { border: 6px solid #f3f3f3; border-top: 6px solid rgb(241,107,170); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ＝＝＝ カルーセル共通 ＝＝＝ */
+    .carousel-section { margin-top: 20px; margin-bottom: 30px; }
+    .section-title { font-size: 16px; font-weight: bold; margin-left: 5vw; margin-bottom: 10px; color: #333; }
+    .carousel-wrapper { position: relative; width: 100vw; }
+    .carousel-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; padding: 0 5vw; scroll-padding-left: 5vw; gap: 15px; box-sizing: border-box; }
+    .carousel-container::-webkit-scrollbar { display: none; }
+
+    /* ＝＝＝ パターン1：横長（PICK UP!） ＝＝＝ */
+    .slide-horizontal { flex: 0 0 100%; scroll-snap-align: center; }
+    .slide-horizontal img { width: 100%; height: auto; display: block; border-radius: 4px; border: 1px solid #ddd; }
+    
+    .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; background-color: rgba(100, 100, 100, 0.7); color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 14px; cursor: pointer; z-index: 10; }
+    .carousel-arrow.left { left: 2vw; }
+    .carousel-arrow.right { right: 2vw; }
+
+    /* ＝＝＝ パターン2：縦長（週間トレンド） ＝＝＝ */
+    .slide-vertical { flex: 0 0 70%; scroll-snap-align: start; background: #fff; border: 1px solid #eee; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .slide-vertical img { width: 100%; height: auto; display: block; }
+    .card-info { padding: 10px; }
+    .card-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+    .card-detail { font-size: 11px; color: #666; line-height: 1.4; }
+    .tag-lottery { display: inline-block; margin-top: 5px; border: 1px solid rgb(189, 74, 137); color: rgb(189, 74, 137); font-size: 10px; padding: 2px 6px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+  <div id="loading-overlay" class="loading-overlay"><div class="loader"></div></div>
+
+ <div id="page-top" class="page active">
+    
+    <div class="top-header">
+      <img src="top.png"> 
+      <div class="hitbox" style="top: 10px; left: 0; width: 20%; height: 60px;" onclick="switchPage('page-member')"></div>
+      <div class="hitbox" style="top: 10px; left: 25%; width: 70%; height: 60px;" onclick="switchPage('page-search')"></div>
+    </div>
+
+    <div class="scroll-area" style="padding-top: 100px;"> 
+      
+      <div class="carousel-section">
+        <div class="section-title">PICK UP !</div>
+        <div class="carousel-wrapper">
+          <div class="carousel-arrow left" onclick="scrollCarousel('pickup-slider', -1)">❮</div>
+          <div class="carousel-container" id="pickup-slider">
+            <div class="slide-horizontal"><img src="banner1.png"></div>
+            <div class="slide-horizontal"><img src="banner2.png"></div>
+            <div class="slide-horizontal"><img src="banner3.png"></div>
+          </div>
+          <div class="carousel-arrow right" onclick="scrollCarousel('pickup-slider', 1)">❯</div>
+        </div>
+      </div>
+
+      <div class="carousel-section">
+        <div class="section-title">週間トレンド（全国版）</div>
+        <div class="carousel-wrapper">
+          <div class="carousel-container">
+            <div class="slide-vertical" onclick="switchPage('page-ticket')">
+              <img src="trend1.png">
+              <div class="card-info">
+                <div class="card-title">Tele</div>
+                <div class="card-detail"> 2027/3/22(月)<br> Kアリーナ横浜</div>
+                <div class="tag-lottery">抽選｜受付中</div>
+              </div>
+            </div>
+            <div class="slide-vertical">
+              <img src="trend2.png">
+              <div class="card-info">
+                <div class="card-title">TREASURE</div>
+                <div class="card-detail"> 9/5(土)〜9/13(日)<br> 蒲郡ラグーナビーチ</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 0 5vw; margin-bottom: 20px;">
+        <img src="bottom_banner.png" style="width: 100%; height: auto; ">
+      </div>
+      <div style="height: 100px;"></div>
+    </div> <div class="fixed-bottom-bar">
+      <div class="nav-item active" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
+      <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
+      <div class="nav-item" onclick="switchPage('page-favorite')"><div class="nav-icon"><img src="icon_favorite.png" class="nav-icon-img"></div><div class="nav-text">お気に入り</div></div>
+      <div class="nav-item" onclick="switchPage('page-notification')"><div class="nav-icon"><img src="icon_notification.png" class="nav-icon-img"></div><div class="nav-text">通知</div></div>
+      <div class="nav-item" onclick="switchPage('page-ticket')"><div class="nav-icon"><img src="icon_ticket.png" class="nav-icon-img"></div><div class="nav-text">チケット</div></div>
+    </div>
+
+  </div> ```
+
+  
+  <div id="page-ticket" class="page">
+    <div class="slider-container">
+      <div class="slider-wrapper" id="ticket-slider">
+        
+        <div class="slider-screen">
+          <div class="scroll-area">
+            <img src="ticket_history.png" class="screenshot">
+            <div class="hitbox" style="top: 3%; left: 35%; width: 30%; height: 9%;" onclick="slideTicket(1)"></div>
+          </div>
+          <div class="absolute-bottom-bar">
+            <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
+            <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
+            <div class="nav-item" onclick="switchPage('page-favorite')"><div class="nav-icon"><img src="icon_favorite.png" class="nav-icon-img"></div><div class="nav-text">お気に入り</div></div>
+            <div class="nav-item" onclick="switchPage('page-notification')"><div class="nav-icon"><img src="icon_notification.png" class="nav-icon-img"></div><div class="nav-text">通知</div></div>
+            <div class="nav-item active" onclick="switchPage('page-ticket')"><div class="nav-icon"><img src="icon_ticket.png" class="nav-icon-img"></div><div class="nav-text">チケット</div></div>
+          </div>
+        </div>
+
+        <div class="slider-screen">
+          <div class="scroll-area">
+            <img src="ticket_smatike.png" class="screenshot" id="smatike-img">
+            <div class="hitbox" style="top: 1%; left: 5%; width: 30%; height: 6%;" onclick="slideTicket(0)"></div>
+            <div class="hitbox" style="top: 7%; left: 0; width: 50%; height: 6%;" onclick="switchSmatikeTab('unused')"></div>
+            <div class="hitbox" style="top: 7%; left: 50%; width: 50%; height: 6%;" onclick="switchSmatikeTab('used')"></div>
+            <div class="hitbox" style="top: 15%; left: 0; width: 100%; height: 45%;" onclick="slideTicket(2)"></div>
+          </div>
+          <div class="absolute-bottom-bar">
+            <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
+            <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
+            <div class="nav-item" onclick="switchPage('page-favorite')"><div class="nav-icon"><img src="icon_favorite.png" class="nav-icon-img"></div><div class="nav-text">お気に入り</div></div>
+            <div class="nav-item" onclick="switchPage('page-notification')"><div class="nav-icon"><img src="icon_notification.png" class="nav-icon-img"></div><div class="nav-text">通知</div></div>
+            <div class="nav-item active" onclick="switchPage('page-ticket')"><div class="nav-icon"><img src="icon_ticket.png" class="nav-icon-img"></div><div class="nav-text">チケット</div></div>
+          </div>
+        </div>
+
+        <div class="slider-screen" style="background-color: #f5f5f5;">
+          <div class="scroll-area">
+            <img src="ticket_detail_header.png" class="screenshot">
+            <div class="accordion-item" id="t1">
+              <img src="ticket_body_1_top.png" style="width:100%; display:block;">
+              <div class="accordion-content"><img src="ticket_detail_content_1.png" class="detail-img"></div>
+              <div style="position: relative;">
+                <img src="ticket_body_1_bottom.png" style="width:100%; display:block;">
+                <div class="hitbox" style="top: 0; right: 2%; width: 20%; height: 100%;" onclick="toggleAccordion('t1')"></div>
+              </div>
+            </div>
+            <div class="hitbox" style="top: 2%; left: 2%; width: 50px; height: 50px;" onclick="slideTicket(1)"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="page-news" class="page">
+    <img src="news.png" class="screenshot">
+    <div class="fixed-bottom-bar">
+      <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
+      <div class="nav-item active" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
+      <div class="nav-item" onclick="switchPage('page-favorite')"><div class="nav-icon"><img src="icon_favorite.png" class="nav-icon-img"></div><div class="nav-text">お気に入り</div></div>
+      <div class="nav-item" onclick="switchPage('page-notification')"><div class="nav-icon"><img src="icon_notification.png" class="nav-icon-img"></div><div class="nav-text">通知</div></div>
+      <div class="nav-item" onclick="switchPage('page-ticket')"><div class="nav-icon"><img src="icon_ticket.png" class="nav-icon-img"></div><div class="nav-text">チケット</div></div>
+    </div>
+  </div>
+
+  <div id="page-favorite" class="page">
+    <img src="favorite.png" class="screenshot">
+    <div class="fixed-bottom-bar">
+      <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
+      <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
+      <div class="nav-item active" onclick="switchPage('page-favorite')"><div class="nav-icon"><img src="icon_favorite.png" class="nav-icon-img"></div><div class="nav-text">お気に入り</div></div>
+      <div class="nav-item" onclick="switchPage('page-notification')"><div class="nav-icon"><img src="icon_notification.png" class="nav-icon-img"></div><div class="nav-text">通知</div></div>
+      <div class="nav-item" onclick="switchPage('page-ticket')"><div class="nav-icon"><img src="icon_ticket.png" class="nav-icon-img"></div><div class="nav-text">チケット</div></div>
+    </div>
+  </div>
+
+  <div id="page-notification" class="page">
+    <img src="notification.png" class="screenshot">
+    <div class="fixed-bottom-bar">
+      <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
+      <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
+      <div class="nav-item" onclick="switchPage('page-favorite')"><div class="nav-icon"><img src="icon_favorite.png" class="nav-icon-img"></div><div class="nav-text">お気に入り</div></div>
+      <div class="nav-item active" onclick="switchPage('page-notification')"><div class="nav-icon"><img src="icon_notification.png" class="nav-icon-img"></div><div class="nav-text">通知</div></div>
+      <div class="nav-item" onclick="switchPage('page-ticket')"><div class="nav-icon"><img src="icon_ticket.png" class="nav-icon-img"></div><div class="nav-text">チケット</div></div>
+    </div>
+  </div>
+
+  <div id="page-member" class="page">
+    <img src="member.png" class="screenshot">
+    <div class="hitbox" style="top: 10%; left: 5%; width: 30%; height: 17%;" onclick="switchPage('page-member-list')"></div>
+    <div class="hitbox" style="top: 2%; right: 2%; width: 50px; height: 50px;" onclick="switchPage('page-top')"></div>
+  </div>
+
+  <div id="page-member-list" class="page">
+    <div class="list-header"><div class="back-arrow" onclick="switchPage('page-member')">〈</div><div class="list-title">会員情報</div></div>
+    <ul class="settings-list">
+      <li onclick="openExternal('https://member.eplus.jp/auth?_gl=1*ounkut*_gcl_au*MTc0NzcxNzE3MS4xNzc3NTY0MDM3*_ga*MzY3MjE2NDY1LjE3NjY0OTk5NTM.*_ga_SQ2W44L884*czE3ODA0ODY1MDMkbzE3JGcxJHQxNzgwNDg2NTMyJGozMSRsMCRoMTI0NDk1OTYyMA..&op=init')">基本情報変更<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">メールアドレス変更<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">携帯電話番号変更<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">パスワード変更<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">パスワード再設定（ID/パスワードご不明な方）<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">同行者登録/解除<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">お届け先登録/変更<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">クレジットカード登録/変更<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">提携サービス登録一覧<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">退会する<span class="right-arrow">〉</span></li>
+      <li onclick="openExternal('https://eplus.jp')">イープラスからログアウトする<span class="right-arrow">〉</span></li>
+    </ul>
+  </div>
+
+  <div id="page-search" class="page">
+    <img src="search.png" class="screenshot">
+    <div class="hitbox" style="top: 2%; left: 2%; width: 20%; height: 8%;" onclick="switchPage('page-top')"></div>
+  </div>
+
+  <script>
+    function switchPage(pageId) {
+      const loading = document.getElementById('loading-overlay');
+      if (pageId === 'page-ticket' && loading.style.display !== 'flex') {
+        loading.style.display = 'flex';
+        setTimeout(() => { loading.style.display = 'none'; executePageSwitch(pageId); }, 500);
+      } else { executePageSwitch(pageId); }
+    }
+
+    function executePageSwitch(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+
+      const themeMeta = document.getElementById('theme-color-meta');
+      let bgColor = '#ffffff';
+
+      if (pageId === 'page-news') { bgColor = '#000000';
+      } else if (pageId === 'page-favorite' || pageId === 'page-notification' || pageId === 'page-ticket') { bgColor = 'rgb(241, 107, 170)';
+      } else if (pageId === 'page-member-list') { bgColor = '#f5f5f5'; }
+
+      themeMeta.setAttribute('content', bgColor);
+      document.body.style.backgroundColor = bgColor;
+    }
+
+    function slideTicket(i) { document.getElementById('ticket-slider').style.transform = `translateX(-${i * 100}vw)`; }
+    function toggleAccordion(id) { document.getElementById(id).classList.toggle('open'); }
+    function openExternal(url) { window.open(url, '_blank'); }
+    
+    function switchSmatikeTab(status) {
+      const img = document.getElementById('smatike-img');
+      if (status === 'unused') { img.src = 'ticket_smatike.png';
+      } else if (status === 'used') { img.src = 'ticket_smatike_used.png'; }
+    }
+
+    // ★追加：カルーセルの矢印クリックでスクロールさせる機能
+    function scrollCarousel(containerId, direction) {
+      const container = document.getElementById(containerId);
+      const scrollAmount = window.innerWidth * 0.85; 
+      
+      container.scrollBy({
+        left: scrollAmount * direction, 
+        behavior: 'smooth' 
+      });
+    }
+  </script>
+</body>
+</html>
