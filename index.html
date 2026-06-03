@@ -56,7 +56,7 @@
     /* ★ 当たり判定（本番時は background-color の行を消してください） */
     .hitbox {
       position: absolute; z-index: 2000; cursor: pointer;
-      /* background-color: rgba(255, 0, 0, 0.4) !important; */
+      background-color: rgba(255, 0, 0, 0.4) !important; 
     }
 
     /* ＝＝＝ トップ固定ヘッダー ＝＝＝ */
@@ -65,7 +65,7 @@
       top: 0;
       left: 0;
       width: 100vw;
-      height: 70px; /* ★修正：少し高めに設定 */
+      height: 92px; /* ★修正：少し高めに設定 */
       overflow: hidden; 
       z-index: 5000; /* ★修正：他の要素（メニュー等）よりも確実に手前に表示する */
       background-color: #fff;
@@ -245,9 +245,10 @@
         
         <div class="slider-screen">
           <div class="scroll-area">
-            <img src="ticket_history.png" class="screenshot">
-            <div class="hitbox" style="top: 3%; left: 35%; width: 30%; height: 9%;" onclick="slideTicket(1)"></div>
+            <img src="ticket_history.png" class="screenshot" style="margin-top: -5px;">
+            <div class="hitbox" style="top: 1%; left: 35%; width: 30%; height: 4%;" onclick="slideTicket(1)"></div>
           </div>
+
           <div class="absolute-bottom-bar">
             <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
             <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
@@ -259,12 +260,13 @@
 
         <div class="slider-screen">
           <div class="scroll-area">
-            <img src="ticket_smatike.png" class="screenshot" id="smatike-img">
-            <div class="hitbox" style="top: 1%; left: 5%; width: 30%; height: 6%;" onclick="slideTicket(0)"></div>
-            <div class="hitbox" style="top: 7%; left: 0; width: 50%; height: 6%;" onclick="switchSmatikeTab('unused')"></div>
-            <div class="hitbox" style="top: 7%; left: 50%; width: 50%; height: 6%;" onclick="switchSmatikeTab('used')"></div>
+            <img src="ticket_smatike.png" class="screenshot" id="smatike-img" style="margin-top: -5px;">
+            <div class="hitbox" style="top: 1%; left: 5%; width: 30%; height: 4%;" onclick="slideTicket(0)"></div>
+            <div class="hitbox" style="top: 6%; left: 0; width: 50%; height: 6%;" onclick="switchSmatikeTab('unused')"></div>
+            <div class="hitbox" style="top: 6%; left: 50%; width: 50%; height: 6%;" onclick="switchSmatikeTab('used')"></div>
             <div class="hitbox" style="top: 15%; left: 0; width: 100%; height: 45%;" onclick="slideTicket(2)"></div>
           </div>
+          
           <div class="absolute-bottom-bar">
             <div class="nav-item" onclick="switchPage('page-top')"><div class="nav-icon"><img src="icon_home.png" class="nav-icon-img"></div><div class="nav-text">ホーム</div></div>
             <div class="nav-item" onclick="switchPage('page-news')"><div class="nav-icon"><img src="icon_news.png" class="nav-icon-img"></div><div class="nav-text">ニュース</div></div>
@@ -274,9 +276,9 @@
           </div>
         </div>
 
-        <div class="slider-screen" style="background-color: #f5f5f5;">
+        <div class="slider-screen" style="background-color: #ffffff;">
           <div class="scroll-area">
-            <img src="ticket_detail_header.png" class="screenshot">
+            <img src="ticket_detail_header.png" class="screenshot" style="margin-top: -5px;">
             <div class="accordion-item" id="t1">
               <img src="ticket_body_1_top.png" style="width:100%; display:block;">
               <div class="accordion-content"><img src="ticket_detail_content_1.png" class="detail-img"></div>
@@ -286,6 +288,9 @@
               </div>
             </div>
             <div class="hitbox" style="top: 2%; left: 2%; width: 50px; height: 50px;" onclick="slideTicket(1)"></div>
+            <div class="hitbox" style="top: 1%; right: 2%; width: 200px; height: 40px;" onclick="alert('使用済みのチケットです。')"></div>
+
+            <div style="height: 200px;"></div>
           </div>
         </div>
 
